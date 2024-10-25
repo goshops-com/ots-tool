@@ -188,14 +188,46 @@
         }
       }
 
-      async function copyToClipboard() {
+      function copyToClipboard() {
         const url = document.getElementById("secret-url").textContent;
-        await navigator.clipboard.writeText(url);
-
-        // Visual feedback
         const button = event.target.closest("button");
         const originalText = button.innerHTML;
-        button.innerHTML = '<i class="fas fa-check"></i><span>Copied!</span>';
+
+        // Fallback for browsers that don't support clipboard API
+        if (!navigator.clipboard) {
+          const textArea = document.createElement("textarea");
+          textArea.value = url;
+          textArea.style.position = "fixed"; // Avoid scrolling
+          textArea.style.opacity = "0";
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+
+          try {
+            document.execCommand("copy");
+            button.innerHTML =
+              '<i class="fas fa-check"></i><span>Copied!</span>';
+          } catch (err) {
+            button.innerHTML =
+              '<i class="fas fa-times"></i><span>Failed to copy</span>';
+          }
+
+          document.body.removeChild(textArea);
+        } else {
+          // Modern browsers
+          navigator.clipboard
+            .writeText(url)
+            .then(() => {
+              button.innerHTML =
+                '<i class="fas fa-check"></i><span>Copied!</span>';
+            })
+            .catch(() => {
+              button.innerHTML =
+                '<i class="fas fa-times"></i><span>Failed to copy</span>';
+            });
+        }
+
+        // Reset button text after 2 seconds
         setTimeout(() => {
           button.innerHTML = originalText;
         }, 2000);
